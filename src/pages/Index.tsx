@@ -29,6 +29,21 @@ interface Transaction {
   date: string;
 }
 
+interface Task {
+  id: string;
+  title: string;
+  completed: boolean;
+  date: string;
+  category: string;
+}
+
+interface ChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: string;
+}
+
 const Index = () => {
   const [journalEntry, setJournalEntry] = useState('');
   const [entries, setEntries] = useState<string[]>([]);
@@ -48,6 +63,32 @@ const Index = () => {
   
   const expenseCategories = ['Еда', 'Транспорт', 'Жильё', 'Здоровье', 'Развлечения', 'Образование', 'Другое'];
   const incomeCategories = ['Зарплата', 'Фриланс', 'Инвестиции', 'Другое'];
+  
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: '1', title: 'Утренняя зарядка 20 минут', completed: false, date: new Date().toISOString().split('T')[0], category: 'Спорт' },
+    { id: '2', title: 'Записать в дневник размышления', completed: false, date: new Date().toISOString().split('T')[0], category: 'Личное' },
+    { id: '3', title: 'Выпить 2 литра воды', completed: false, date: new Date().toISOString().split('T')[0], category: 'Здоровье' },
+  ]);
+  
+  const [newTask, setNewTask] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { id: '1', sender: 'ai', text: 'Привет! Я твой личный наставник 🌟 Рад быть рядом на твоём пути к лучшей жизни. Как твои дела сегодня?', timestamp: new Date().toISOString() },
+  ]);
+  
+  const [userMessage, setUserMessage] = useState('');
+  
+  const aiResponses = [
+    'Отличный вопрос! Помни, что маленькие шаги каждый день приводят к большим изменениям 💪',
+    'Я верю в тебя! Ты уже проделал большой путь, продолжай двигаться вперёд 🚀',
+    'Это совершенно нормально чувствовать себя так. Главное — не останавливаться. Я здесь, чтобы поддержать тебя ❤️',
+    'Классная идея! Давай разобьём это на маленькие задачи, чтобы было легче начать 📝',
+    'Помни, что саморазвитие — это марафон, а не спринт. Ты справляешься отлично! 🌱',
+    'Давай посмотрим на твой прогресс — ты уже многого добился! Гордись собой 🎯',
+    'Иногда нужен отдых, и это абсолютно нормально. Забота о себе — тоже часть пути к успеху 🧘',
+    'Отличное наблюдение! Продолжай быть внимательным к себе — это очень важный навык 👁️',
+  ];
 
   const metrics: MetricData[] = [
     { name: 'Спорт', value: 75, goal: 100, unit: 'мин', icon: 'Dumbbell', color: 'bg-primary', trend: 12 },
@@ -68,6 +109,50 @@ const Index = () => {
     if (journalEntry.trim()) {
       setEntries([journalEntry, ...entries]);
       setJournalEntry('');
+    }
+  };
+  
+  const handleAddTask = () => {
+    if (newTask.trim()) {
+      const task: Task = {
+        id: Date.now().toString(),
+        title: newTask,
+        completed: false,
+        date: selectedDate,
+        category: 'Личное'
+      };
+      setTasks([...tasks, task]);
+      setNewTask('');
+    }
+  };
+  
+  const toggleTask = (taskId: string) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, completed: !task.completed } : task
+    ));
+  };
+  
+  const handleSendMessage = () => {
+    if (userMessage.trim()) {
+      const newUserMessage: ChatMessage = {
+        id: Date.now().toString(),
+        sender: 'user',
+        text: userMessage,
+        timestamp: new Date().toISOString()
+      };
+      
+      setChatMessages([...chatMessages, newUserMessage]);
+      setUserMessage('');
+      
+      setTimeout(() => {
+        const aiResponse: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          sender: 'ai',
+          text: aiResponses[Math.floor(Math.random() * aiResponses.length)],
+          timestamp: new Date().toISOString()
+        };
+        setChatMessages(prev => [...prev, aiResponse]);
+      }, 1000);
     }
   };
   
@@ -96,6 +181,9 @@ const Index = () => {
       acc[t.category] = (acc[t.category] || 0) + t.amount;
       return acc;
     }, {} as Record<string, number>);
+  
+  const todayTasks = tasks.filter(t => t.date === selectedDate);
+  const completedToday = todayTasks.filter(t => t.completed).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-calm/20 to-growth/20 p-4 md:p-8">
@@ -106,7 +194,7 @@ const Index = () => {
           <p className="text-muted-foreground text-lg">Отслеживай прогресс и меняй жизнь каждый день</p>
         </header>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           <Card className="border-2 hover:shadow-xl transition-all duration-300 animate-scale-in">
             <CardHeader className="text-center pb-2">
               <CardTitle className="text-2xl">Общий Прогресс</CardTitle>
@@ -165,6 +253,52 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <p className="text-lg leading-relaxed text-foreground/90">{adviceOfDay.text}</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-2 hover:shadow-xl transition-all duration-300 animate-scale-in">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Icon name="Calendar" className="text-primary" size={24} />
+                <CardTitle className="text-2xl">Задачи на День</CardTitle>
+              </div>
+              <CardDescription>{completedToday} из {todayTasks.length} выполнено</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {todayTasks.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">Нет задач на сегодня</p>
+              ) : (
+                todayTasks.map((task) => (
+                  <div 
+                    key={task.id} 
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer ${
+                      task.completed ? 'bg-growth/20' : 'bg-muted/30'
+                    }`}
+                    onClick={() => toggleTask(task.id)}
+                  >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                      task.completed ? 'bg-growth border-growth' : 'border-muted-foreground'
+                    }`}>
+                      {task.completed && <Icon name="Check" size={14} className="text-white" />}
+                    </div>
+                    <span className={`flex-1 ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                      {task.title}
+                    </span>
+                  </div>
+                ))
+              )}
+              
+              <div className="flex gap-2 pt-2">
+                <Input
+                  placeholder="Новая задача..."
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+                />
+                <Button onClick={handleAddTask} size="icon">
+                  <Icon name="Plus" size={18} />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -431,6 +565,83 @@ const Index = () => {
                 )}
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-2 hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-primary/5 to-energy/5">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Icon name="MessageCircle" className="text-primary" size={24} />
+              <CardTitle className="text-2xl">Личный Наставник</CardTitle>
+            </div>
+            <CardDescription>Твой ИИ-друг для поддержки и мотивации</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="h-96 overflow-y-auto space-y-3 p-4 bg-background/50 rounded-lg">
+                {chatMessages.map((message) => (
+                  <div 
+                    key={message.id}
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                  >
+                    <div className={`max-w-[80%] p-3 rounded-2xl ${
+                      message.sender === 'user' 
+                        ? 'bg-primary text-primary-foreground ml-4' 
+                        : 'bg-calm/30 text-foreground mr-4'
+                    }`}>
+                      {message.sender === 'ai' && (
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon name="Sparkles" size={16} className="text-primary" />
+                          <span className="text-xs font-semibold text-primary">ИИ Наставник</span>
+                        </div>
+                      )}
+                      <p className="text-sm leading-relaxed">{message.text}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {new Date(message.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Напиши свои мысли или вопросы..."
+                  value={userMessage}
+                  onChange={(e) => setUserMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  className="flex-1"
+                />
+                <Button onClick={handleSendMessage} disabled={!userMessage.trim()}>
+                  <Icon name="Send" size={18} />
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setUserMessage('Как мне начать день правильно?');
+                    setTimeout(() => handleSendMessage(), 100);
+                  }}
+                  className="text-xs"
+                >
+                  💭 Советы на день
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setUserMessage('Я чувствую упадок мотивации');
+                    setTimeout(() => handleSendMessage(), 100);
+                  }}
+                  className="text-xs"
+                >
+                  💪 Нужна поддержка
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
